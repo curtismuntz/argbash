@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 # shellcheck disable=SC2016,SC2059
 # SC2016: Expressions don't expand in single quotes, use double quotes for that.
 # SC2059 Don't use variables in the printf format string.
@@ -455,7 +455,30 @@ then
 	cat > "$infile"
 fi
 
-m4dir="$script_dir/../src"
+# --- begin runfiles.bash initialization ---
+if [[ ! -d "${RUNFILES_DIR:-/dev/null}" && ! -f "${RUNFILES_MANIFEST_FILE:-/dev/null}" ]]; then
+    if [[ -f "$0.runfiles_manifest" ]]; then
+      export RUNFILES_MANIFEST_FILE="$0.runfiles_manifest"
+    elif [[ -f "$0.runfiles/MANIFEST" ]]; then
+      export RUNFILES_MANIFEST_FILE="$0.runfiles/MANIFEST"
+    elif [[ -f "$0.runfiles/bazel_tools/tools/bash/runfiles/runfiles.bash" ]]; then
+      export RUNFILES_DIR="$0.runfiles"
+    fi
+fi
+if [[ -f "${RUNFILES_DIR:-/dev/null}/bazel_tools/tools/bash/runfiles/runfiles.bash" ]]; then
+  source "${RUNFILES_DIR}/bazel_tools/tools/bash/runfiles/runfiles.bash"
+elif [[ -f "${RUNFILES_MANIFEST_FILE:-/dev/null}" ]]; then
+  source "$(grep -m1 "^bazel_tools/tools/bash/runfiles/runfiles.bash " \
+            "$RUNFILES_MANIFEST_FILE" | cut -d ' ' -f 2-)"
+else
+  echo >&2 "ERROR: cannot find @bazel_tools//tools/bash/runfiles:runfiles.bash"
+  m4dir="$script_dir/../src"
+#  exit 1
+fi
+m4dir="$(dirname $(rlocation __main__/src/argbash.m4))"
+echo "MURTIS:$m4dir"
+# --- end runfiles.bash initialization ---
+
 test -n "$_arg_debug" && DEBUG=('-t' "$_arg_debug")
 
 output_m4="$m4dir/output-strip-none.m4"
